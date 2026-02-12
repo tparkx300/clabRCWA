@@ -217,6 +217,35 @@ class Incident:
         e_TM = e_TM / norm_TM
         
         return e_TE, e_TM
+    
+    def update_wavelength(self, lamb0, epsilon_trn, mu_trn=1.0):
+        """
+        Update wavelength and recalculate k-vectors without recreating object.
+        
+        Args:
+            lamb0: New free space wavelength
+            epsilon_trn: Permittivity in transmission region
+            mu_trn: Permeability in transmission region (default: 1.0)
+        """
+        self.lamb0 = lamb0
+        self.k0 = 2 * math.pi / lamb0
+        
+        # Recalculate incident k-vector
+        self.k_inc = self.k0 * self.n_inc * torch.tensor([
+            math.sin(self.theta) * math.cos(self.phi),
+            math.sin(self.theta) * math.sin(self.phi),
+            math.cos(self.theta)
+        ], dtype=self.n_inc.dtype, device=self.device)
+        
+        self.kx = self.k_inc[0]
+        self.ky = self.k_inc[1]
+        self.kz = self.k_inc[2]
+        self.kx_norm = self.kx / self.k0
+        self.ky_norm = self.ky / self.k0
+        self.kz_norm = self.kz / self.k0
+        
+        # Recalculate k-matrices with new wavelength
+        self._setup_k_matrices(torch.tensor(epsilon_trn), torch.tensor(mu_trn))
         
     def angle_by_order(self, nx, ny, forward=True):
         """
